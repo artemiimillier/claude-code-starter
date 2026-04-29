@@ -108,7 +108,7 @@ function MessageCard({ msg, q, onSave }: { msg: Message; q: string; onSave: (id:
             <ChatTypeIcon type={msg.chat_type} />
             {msg.chat_name}
           </span>
-          <Badge variant={chatTypeBadgeVariant(msg.chat_type)} size="sm">
+          <Badge variant={chatTypeBadgeVariant(msg.chat_type)}>
             {msg.chat_type === 'channel' ? 'канал' : msg.chat_type === 'group' ? 'группа' : 'личка'}
           </Badge>
           <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{formatDate(msg.original_date)}</span>

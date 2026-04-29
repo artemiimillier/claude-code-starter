@@ -36,7 +36,7 @@ const stagger = {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 function chatTypeLabel(type: string) {
@@ -164,7 +164,7 @@ export default function DashboardPage() {
           style={{ padding: '20px 24px' }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
@@ -185,7 +185,7 @@ export default function DashboardPage() {
           style={{ padding: '20px 24px' }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.32, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.32, duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Последние сообщения</div>
@@ -246,7 +246,7 @@ function RecentItem({ msg }: { msg: RecentMessage }) {
           }}>
             {msg.chat_name}
           </span>
-          <Badge variant="neutral" size="sm">{chatTypeLabel(msg.chat_type)}</Badge>
+          <Badge variant="neutral">{chatTypeLabel(msg.chat_type)}</Badge>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>
           <Clock size={10} strokeWidth={2} />

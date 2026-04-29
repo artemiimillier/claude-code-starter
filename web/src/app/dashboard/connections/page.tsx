@@ -25,7 +25,7 @@ const OPENAI_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo']
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 function ConnectionCard({
@@ -260,7 +260,7 @@ export default function ConnectionsPage() {
       </motion.div>
 
       <ConfirmModal
-        isOpen={confirmModal.isOpen}
+        open={confirmModal.isOpen}
         onClose={confirmModal.close}
         onConfirm={confirmSave}
         type="warning"
