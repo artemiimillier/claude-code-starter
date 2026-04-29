@@ -4,7 +4,15 @@ import path from 'path'
 import pool from './db'
 import { getVaultPath } from './vault'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+// Lazy: avoid crashing at module-eval time during `next build` page-data collection
+let _openai: OpenAI | null = null
+function openai(): OpenAI {
+  if (_openai) return _openai
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not set')
+  _openai = new OpenAI({ apiKey })
+  return _openai
+}
 
 // ─── Context retrieval ────────────────────────────────────────────────────────
 
@@ -79,7 +87,7 @@ ${msgContext ? `РЕЛЕВАНТНЫЕ СООБЩЕНИЯ:\n${msgContext}\n` : '
 ${vaultContext ? `ПРОФИЛИ КОНТАКТОВ:\n${vaultContext}\n` : ''}
 ${!msgContext && !vaultContext ? 'Данных по этому запросу в базе не найдено. Скажи об этом пользователю.' : ''}`
 
-  const response = await openai.chat.completions.create({
+  const response = await openai().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       { role: 'system', content: systemPrompt },
@@ -112,7 +120,7 @@ ${msgContext ? `РЕЛЕВАНТНЫЕ СООБЩЕНИЯ:\n${msgContext}\n` : '
 ${vaultContext ? `ПРОФИЛИ КОНТАКТОВ:\n${vaultContext}\n` : ''}
 ${!msgContext && !vaultContext ? 'Данных по этому запросу не найдено.' : ''}`
 
-  const stream = await openai.chat.completions.create({
+  const stream = await openai().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       { role: 'system', content: systemPrompt },

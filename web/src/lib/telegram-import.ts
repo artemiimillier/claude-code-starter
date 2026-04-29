@@ -1,6 +1,7 @@
 import { TelegramClient } from 'telegram'
 import { Api } from 'telegram/tl'
 import pool from './db'
+import { listBlockedIds } from './chat-blocks'
 
 export interface ImportJob {
   id:          string
@@ -56,6 +57,8 @@ async function runImport(job: ImportJob, client: TelegramClient, hours: number) 
   const dialogs = await client.getDialogs({ limit: 500 })
   job.total = dialogs.length
 
+  const blockedIds = await listBlockedIds(job.userId)
+
   for (let di = 0; di < dialogs.length; di++) {
     const dialog = dialogs[di]
     job.currentChat = dialog.name ?? String(di)
@@ -73,6 +76,8 @@ async function runImport(job: ImportJob, client: TelegramClient, hours: number) 
     const chatId   = getChatId(entity)
     const chatName = dialog.name ?? ''
     const chatType = getChatType(entity)
+
+    if (blockedIds.has(String(chatId))) continue
 
     // Upsert contact/chat
     await upsertContact(job.userId, entity, chatName, chatType)

@@ -98,6 +98,19 @@ export async function migrate() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS chat_blocks (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      user_id    INT NOT NULL,
+      chat_id    BIGINT NOT NULL,
+      chat_name  VARCHAR(255),
+      chat_type  ENUM('private','group','channel') DEFAULT 'private',
+      blocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_block (user_id, chat_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
 }
 
 export default pool;

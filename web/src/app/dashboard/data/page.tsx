@@ -5,16 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Radio, Users, MessageSquare,
   Pencil, Check, X, ChevronLeft, ChevronRight,
+  MoreVertical, Lock, LockOpen, Trash2, Ban,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { SkeletonRow, SkeletonText } from '@/components/ui/Skeleton'
+import { SkeletonRow } from '@/components/ui/Skeleton'
+import { ChatDeleteModal } from '@/components/data/ChatDeleteModal'
+import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 
 interface Chat {
-  chat_id: number
+  chat_id:   number
   chat_name: string
   chat_type: 'private' | 'group' | 'channel'
-  count: number
+  count:     number
+  blocked:   boolean
 }
 
 interface Message {
@@ -197,6 +201,7 @@ export default function DataPage() {
   const [q, setQ]               = useState('')
   const [chatId, setChatId]     = useState('')
   const [loading, setLoading]   = useState(true)
+  const [deleteFor, setDeleteFor] = useState<Chat | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const load = useCallback(async (query: string, chat: string, pg: number) => {
@@ -213,9 +218,13 @@ export default function DataPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => {
-    fetch('/api/data/chats').then(r => r.json()).then(d => setChats(d.chats ?? []))
+  const loadChats = useCallback(async () => {
+    const res = await fetch('/api/data/chats')
+    const data = await res.json()
+    setChats(data.chats ?? [])
   }, [])
+
+  useEffect(() => { loadChats() }, [loadChats])
 
   useEffect(() => {
     load(q, chatId, page)
@@ -234,7 +243,34 @@ export default function DataPage() {
     load(q, id, 1)
   }
 
-  const totalChats = chats.reduce((s, c) => s + Number(c.count), 0)
+  async function toggleBlock(c: Chat) {
+    const next = !c.blocked
+    await fetch(`/api/data/chats/${c.chat_id}/block`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blocked: next, name: c.chat_name, type: c.chat_type }),
+    })
+    await loadChats()
+  }
+
+  async function confirmDelete(block: boolean) {
+    if (!deleteFor) return
+    await fetch(`/api/data/chats/${deleteFor.chat_id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ block }),
+    })
+    if (chatId === String(deleteFor.chat_id)) {
+      setChatId('')
+      setPage(1)
+      load(q, '', 1)
+    }
+    await loadChats()
+  }
+
+  const active   = chats.filter(c => c.count > 0)
+  const orphans  = chats.filter(c => c.count === 0 && c.blocked)
+  const totalChats = active.reduce((s, c) => s + Number(c.count), 0)
 
   async function handleSave(id: number, text: string) {
     await fetch(`/api/data/${id}`, {
@@ -250,7 +286,7 @@ export default function DataPage() {
 
       {/* Chat sidebar */}
       <div style={{
-        width: 230, flexShrink: 0,
+        width: 250, flexShrink: 0,
         borderRight: '1px solid var(--border)',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
@@ -262,16 +298,48 @@ export default function DataPage() {
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
           <NavItem label="Все" count={totalChats} active={chatId === ''} onClick={() => selectChat('')} />
-          {chats.map(c => (
+          {active.map(c => (
             <NavItem
               key={c.chat_id}
               label={c.chat_name || String(c.chat_id)}
               count={Number(c.count)}
               type={c.chat_type}
+              blocked={c.blocked}
               active={chatId === String(c.chat_id)}
               onClick={() => selectChat(String(c.chat_id))}
+              onToggleBlock={() => toggleBlock(c)}
+              onDelete={() => setDeleteFor(c)}
             />
           ))}
+
+          {orphans.length > 0 && (
+            <>
+              <div style={{
+                padding: '14px 16px 6px', marginTop: 8,
+                borderTop: '1px solid var(--border)',
+                fontSize: 11, fontWeight: 600,
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <Ban size={12} strokeWidth={2} />
+                Заблокированные
+              </div>
+              {orphans.map(c => (
+                <NavItem
+                  key={c.chat_id}
+                  label={c.chat_name || String(c.chat_id)}
+                  count={0}
+                  type={c.chat_type}
+                  blocked={true}
+                  orphan
+                  active={false}
+                  onClick={() => {}}
+                  onToggleBlock={() => toggleBlock(c)}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
 
@@ -372,34 +440,165 @@ export default function DataPage() {
           )}
         </div>
       </div>
+
+      <ChatDeleteModal
+        open={deleteFor !== null}
+        chatName={deleteFor?.chat_name ?? ''}
+        count={deleteFor?.count ?? 0}
+        onClose={() => setDeleteFor(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }
 
 function NavItem({
-  label, count, type, active, onClick,
+  label, count, type, active, onClick, blocked, orphan, onToggleBlock, onDelete,
 }: {
-  label: string; count: number; type?: 'private' | 'group' | 'channel'; active: boolean; onClick: () => void
+  label: string
+  count: number
+  type?: 'private' | 'group' | 'channel'
+  active: boolean
+  onClick: () => void
+  blocked?: boolean
+  orphan?: boolean
+  onToggleBlock?: () => void
+  onDelete?: () => void
+}) {
+  const [menu, setMenu] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  useOnClickOutside(wrapRef, () => setMenu(false))
+
+  const showActions = Boolean(onToggleBlock || onDelete)
+
+  return (
+    <div
+      ref={wrapRef}
+      style={{
+        position: 'relative',
+        display: 'flex', alignItems: 'center',
+        background: active ? 'var(--surface-2)' : 'transparent',
+        borderLeft: active ? '3px solid var(--accent-soft)' : '3px solid transparent',
+        transition: 'background 0.12s, color 0.12s',
+        opacity: blocked ? 0.55 : 1,
+      }}
+    >
+      <button
+        onClick={onClick}
+        disabled={orphan}
+        style={{
+          flex: 1, minWidth: 0, textAlign: 'left',
+          padding: '7px 10px 7px 14px',
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 13,
+          color: active ? 'var(--text)' : 'var(--text-muted)',
+          background: 'transparent',
+          cursor: orphan ? 'default' : 'pointer',
+        }}
+      >
+        {type && <ChatTypeIcon type={type} />}
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {label}
+        </span>
+        {blocked && (
+          <Lock size={11} strokeWidth={2} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+        )}
+        {!orphan && (
+          <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>
+            {count.toLocaleString('ru-RU')}
+          </span>
+        )}
+      </button>
+
+      {showActions && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setMenu(m => !m) }}
+          aria-label="Действия"
+          style={{
+            flexShrink: 0,
+            padding: '6px 8px',
+            color: 'var(--text-muted)',
+            background: menu ? 'var(--surface-3)' : 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: 6,
+            marginRight: 4,
+          }}
+        >
+          <MoreVertical size={14} strokeWidth={2} />
+        </button>
+      )}
+
+      <AnimatePresence>
+        {menu && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: -4 }}
+            transition={{ duration: 0.12 }}
+            style={{
+              position: 'absolute', top: '100%', right: 4,
+              zIndex: 20, marginTop: 2,
+              minWidth: 220,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              padding: 4,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+            }}
+          >
+            {onToggleBlock && (
+              <MenuItem
+                onClick={() => { setMenu(false); onToggleBlock() }}
+                icon={blocked ? <LockOpen size={13} strokeWidth={2} /> : <Lock size={13} strokeWidth={2} />}
+              >
+                {blocked ? 'Разблокировать загрузку' : 'Не загружать новые'}
+              </MenuItem>
+            )}
+            {onDelete && (
+              <MenuItem
+                onClick={() => { setMenu(false); onDelete() }}
+                icon={<Trash2 size={13} strokeWidth={2} />}
+                danger
+              >
+                Удалить данные
+              </MenuItem>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function MenuItem({
+  onClick, icon, children, danger,
+}: {
+  onClick: () => void
+  icon: React.ReactNode
+  children: React.ReactNode
+  danger?: boolean
 }) {
   return (
     <button
       onClick={onClick}
       style={{
         width: '100%', textAlign: 'left',
-        padding: '7px 14px',
         display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 10px',
         fontSize: 13,
-        background: active ? 'var(--surface-2)' : 'transparent',
-        color: active ? 'var(--text)' : 'var(--text-muted)',
-        borderLeft: active ? '3px solid var(--accent-soft)' : '3px solid transparent',
-        transition: 'background 0.12s, color 0.12s',
+        color: danger ? 'var(--danger)' : 'var(--text)',
+        background: 'transparent',
+        border: 'none',
+        borderRadius: 6,
+        cursor: 'pointer',
+        transition: 'background 0.12s',
       }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
     >
-      {type && <ChatTypeIcon type={type} />}
-      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {label}
-      </span>
-      <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>{count.toLocaleString('ru-RU')}</span>
+      <span style={{ display: 'flex', flexShrink: 0 }}>{icon}</span>
+      {children}
     </button>
   )
 }

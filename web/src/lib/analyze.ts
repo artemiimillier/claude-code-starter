@@ -2,7 +2,15 @@ import Anthropic from '@anthropic-ai/sdk'
 import pool from './db'
 import { writeContactProfile, updateContactsIndex, profileExists, safeFilename } from './vault'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+// Lazy: avoid crashing at module-eval time during `next build` page-data collection
+let _client: Anthropic | null = null
+function client(): Anthropic {
+  if (_client) return _client
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set')
+  _client = new Anthropic({ apiKey })
+  return _client
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -172,7 +180,7 @@ ${msgText}
 
 *Профиль создан: ${new Date().toLocaleDateString('ru-RU')}*`
 
-  const response = await client.messages.create({
+  const response = await client().messages.create({
     model:      'claude-haiku-4-5-20251001',
     max_tokens: 1200,
     system:     systemPrompt,

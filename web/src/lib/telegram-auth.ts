@@ -113,6 +113,14 @@ async function persistSession(userId: number, client: TelegramClient, phone: str
                             updated_at = NOW()
   `, [userId, enc, phone])
   await client.disconnect()
+
+  // Spin up live receiver for newly authorized session
+  try {
+    const { register } = await import('./telegram-live')
+    await register(userId)
+  } catch (err) {
+    console.error('[telegram-auth] live register failed', err)
+  }
 }
 
 export async function disconnectUser(userId: number) {
@@ -120,6 +128,12 @@ export async function disconnectUser(userId: number) {
   if (pending) {
     await pending.client.disconnect().catch(() => {})
     pendingAuth.delete(userId)
+  }
+  try {
+    const { unregister } = await import('./telegram-live')
+    await unregister(userId)
+  } catch (err) {
+    console.error('[telegram-auth] live unregister failed', err)
   }
   await pool.execute('DELETE FROM tg_sessions WHERE user_id = ?', [userId])
 }
