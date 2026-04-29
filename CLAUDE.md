@@ -40,6 +40,18 @@
 - **Цвета:** `--accent-soft: #8ae3ee`, `--signal: #d7ff6f`, градиент `135deg`
 - **Инфра:** выделенный сервер, приватный доступ
 
+## Дизайн-система (ОБЯЗАТЕЛЬНО читать перед UI-задачами)
+
+**`web/DESIGN.md`** — полная документация по UI:
+- Цветовые переменные, типографика, сетка
+- Компоненты: Card, Button, Skeleton, Modal, ConfirmModal
+- Layout: Header, Sidebar (desktop collapse + mobile drawer + burger)
+- Иконки: **только Lucide React** (`lucide-react`)
+- Графики: **Recharts** с placeholder-синусоидом при загрузке
+- Иллюстрации: **Undraw.co** SVG, primary color `#8ae3ee`, в `public/illustrations/`
+- Анимации: **Framer Motion v11** — пресеты transitions в DESIGN.md
+- Модалки: порталы через `ReactDOM.createPortal`, backdrop blur 8px
+
 ## Ключевые принципы работы
 
 1. **Всегда читай `.business/INDEX.md`** перед задачей, связанной с логикой проекта.
