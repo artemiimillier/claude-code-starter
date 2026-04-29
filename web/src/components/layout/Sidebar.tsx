@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Database, MessageSquare,
-  Plug, Settings, HelpCircle, Download,
+  Plug, Settings, HelpCircle, Download, Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 const NAV_TOP = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Дашборд' },
   { href: '/dashboard/data',        icon: Database,        label: 'Данные' },
+  { href: '/dashboard/crm',         icon: Users,           label: 'CRM' },
   { href: '/dashboard/chat',        icon: MessageSquare,   label: 'Чат' },
   { href: '/dashboard/import',      icon: Download,        label: 'Импорт' },
   { href: '/dashboard/connections', icon: Plug,            label: 'Подключения' },
