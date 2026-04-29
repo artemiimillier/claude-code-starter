@@ -1,7 +1,11 @@
 ---
 completed: false
-last_completed_step: 0
+last_completed_step: 9
 started_at: null
+os: macos
+project_idea: "Второй мозг - AI-ассистент, который индексирует переписки Telegram и отвечает на вопросы по ним"
+project_type: non-commercial
+stack: node
 ---
 
 # AUTOPILOT - онбординг пользователя

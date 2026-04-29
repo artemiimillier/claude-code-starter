@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff 2>/dev/null || printf '\\a'"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff 2>/dev/null || printf '\\a'"
+          }
+        ]
+      }
+    ]
+  },
+
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf /)",
+      "Bash(export *&& curl *)",
+      "Bash(export *;curl *)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Bash(wget *$*)",
+      "Bash(chmod 777 *)"
+    ]
+  }
+}
