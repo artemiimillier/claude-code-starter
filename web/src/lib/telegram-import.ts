@@ -75,7 +75,7 @@ async function runImport(job: ImportJob, client: TelegramClient, hours: number) 
     const chatType = getChatType(entity)
 
     // Upsert contact/chat
-    await upsertContact(job.userId, entity, chatName, chatType)
+    await upsertContact(job.userId, entity, chatName, getContactType(entity))
 
     // Fetch messages in batches
     let offsetId    = 0
@@ -195,4 +195,12 @@ function getChatType(entity: any): 'private' | 'group' | 'channel' {
   if (type === 'Channel' && entity.broadcast) return 'channel'
   if (type === 'Channel' || type === 'Chat' || type === 'ChatForbidden') return 'group'
   return 'private'
+}
+
+function getContactType(entity: any): 'user' | 'bot' | 'channel' | 'group' {
+  const type = entity.className ?? ''
+  if (type === 'Channel' && entity.broadcast) return 'channel'
+  if (type === 'Channel' || type === 'Chat' || type === 'ChatForbidden') return 'group'
+  if (entity.bot) return 'bot'
+  return 'user'
 }

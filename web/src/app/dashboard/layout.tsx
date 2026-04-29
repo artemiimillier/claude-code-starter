@@ -7,10 +7,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const userId = await getSession()
   if (!userId) redirect('/auth')
 
-  const [rows] = await pool.execute(
-    'SELECT email FROM users WHERE id = ?', [userId]
-  ) as any[]
-  const email: string = (rows as any[])[0]?.email ?? ''
+  let email = ''
+  try {
+    const [rows] = await pool.execute(
+      'SELECT email FROM users WHERE id = ?', [userId]
+    ) as any[]
+    email = (rows as any[])[0]?.email ?? ''
+  } catch (err) {
+    console.error('DB error in DashboardLayout:', err)
+    redirect('/auth')
+  }
 
   return <DashboardShell userEmail={email}>{children}</DashboardShell>
 }
