@@ -60,6 +60,8 @@ check "API-ключи, токены в парах key=value" \
   -i "(api[_-]?key|secret|password|token|bearer)\s*[:=]\s*[\"'][^\"']{10,}"
 check "Stripe / OpenAI live-ключи" \
   "sk-[a-zA-Z0-9]{20,}|sk_live_|sk_test_|BEGIN.*PRIVATE KEY"
+check "Токены вида id:key (Telegram bot и подобные)" \
+  -E "[0-9]{8,12}:[A-Za-z0-9_-]{32,}"
 
 hdr "6. Запрещённые файлы"
 if [ -f .env ];                           then red "FAIL: .env present"; FAIL=1;                 else green "OK: no .env"; fi
