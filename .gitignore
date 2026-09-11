@@ -1,13 +1,16 @@
-# Секреты и локальные настройки - никогда не коммитить
+# Секреты и локальные настройки. Ignore не удаляет tracked-файлы/историю.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.sample
+.mcp.json
+credentials.json
 *.pem
 *.key
 
 # ВНИМАНИЕ: .business/ в ЭТОМ шаблоне - плейсхолдеры, они должны быть в git.
-# После онбординга (шаг 10a в AUTOPILOT.md) Клод добавит .business/ в .gitignore,
-# чтобы твои приватные данные не попадали в публичный репо.
+# ДО ввода приватных данных исключи .business/ и убери из индекса.
+# Проверяй git ls-files -- .business; это не очищает прежнюю историю.
 
 # Локальные настройки Claude Code
 .claude/settings.local.json
@@ -39,6 +42,8 @@ pnpm-debug.log*
 yarn-debug.log*
 
 # Тесты и кэши
+__pycache__/
+*.pyc
 .cache/
 coverage/
 .nyc_output/

@@ -1,69 +1,9 @@
 #!/usr/bin/env bash
-# pre-commit hook для защиты от случайной утечки секретов
-#
-# Чтобы включить этот hook в своём проекте:
-#   cp .github/hooks/pre-commit.sample .git/hooks/pre-commit
-#   chmod +x .git/hooks/pre-commit
-#
-# После этого каждая попытка git commit будет проверять:
-# - нет ли API-ключей в staged файлах
-# - нет ли .env в коммите
-# - нет ли AWS/Stripe/OpenAI токенов
-# - нет ли SSH-ключей или private keys
-
-set -u
-
-FAIL=0
-STAGED=$(git diff --cached --name-only --diff-filter=ACM)
-
-if [ -z "$STAGED" ]; then
-  exit 0
-fi
-
-red()   { printf "\033[31m%s\033[0m\n" "$*" >&2; }
-yellow(){ printf "\033[33m%s\033[0m\n" "$*" >&2; }
-
-# 1. .env файлы не коммитим никогда
-for file in $STAGED; do
-  case "$file" in
-    .env|.env.*|*/\.env|*/\.env.*)
-      red "BLOCKED: попытка закоммитить $file"
-      red "  Ключи из .env не должны попадать в git."
-      red "  Добавь в .gitignore: echo '$file' >> .gitignore"
-      FAIL=1
-      ;;
-  esac
-done
-
-# 2. Формальные паттерны секретов в содержимом
-for file in $STAGED; do
-  if [ -f "$file" ]; then
-    # API keys в парах key=value
-    if git diff --cached "$file" | grep -qE "^\+.*(api[_-]?key|secret|password|token|bearer)\s*[:=]\s*[\"'][^\"']{16,}" -i; then
-      yellow "WARN: в $file найден паттерн API-ключа в коде. Проверь что это не реальный ключ."
-      yellow "  Секреты должны быть в .env, не в коде."
-      FAIL=1
-    fi
-
-    # Stripe / OpenAI live keys
-    if git diff --cached "$file" | grep -qE "^\+.*(sk-[a-zA-Z0-9]{32,}|sk_live_[a-zA-Z0-9]{20,})"; then
-      red "BLOCKED: в $file найден live-ключ (Stripe/OpenAI). Это реальный секрет - НЕ коммить."
-      FAIL=1
-    fi
-
-    # Private keys
-    if git diff --cached "$file" | grep -qE "^\+.*BEGIN (RSA |DSA |EC |OPENSSH |)PRIVATE KEY"; then
-      red "BLOCKED: в $file найден приватный ключ. НЕ коммить в git."
-      FAIL=1
-    fi
-  fi
-done
-
-if [ $FAIL -eq 1 ]; then
-  red ""
-  red "Коммит заблокирован. Исправь и попробуй снова."
-  red "Если уверен что ложное срабатывание - коммить с --no-verify (но это опасно)."
-  exit 1
-fi
-
-exit 0
+# Optional hook: install manually after review; never overwrite an existing hook.
+# Check `git config --get core.hooksPath` and `git rev-parse --git-path hooks`
+# first. If a hook already exists, integrate the invocation after reviewing it.
+# This sample does not install itself or change core.hooksPath.
+set -euo pipefail
+ROOT=$(git rev-parse --show-toplevel) || exit 2
+cd "$ROOT"
+exec python3 "$ROOT/scripts/check_secrets.py" --staged

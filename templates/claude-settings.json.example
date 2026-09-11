@@ -29,8 +29,14 @@
       "Bash(rm -rf /)",
       "Bash(export *&& curl *)",
       "Bash(export *;curl *)",
-      "Read(.env)",
-      "Read(.env.local)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./.mcp.json)",
+      "Read(./**/credentials.json)",
       "Bash(wget *$*)",
       "Bash(chmod 777 *)"
     ]
